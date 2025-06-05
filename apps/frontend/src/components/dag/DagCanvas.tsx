@@ -25,6 +25,7 @@ import { Node as CustomNode } from './Node';
 import { Edge as CustomEdge } from './Edge';
 import { Toolbar } from './Toolbar';
 import { EmptyState } from './EmptyState';
+import useDagStore, { useTemporalStore } from '@/stores/dagStore';
 
 // Wrapper component to make our Node component compatible with ReactFlow
 function NodeWrapper(props: ReactFlowNodeProps) {
@@ -96,6 +97,13 @@ export function DagCanvas({
 }: DagCanvasProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Use Zustand store with a single selector returning the whole state
+  const store = useDagStore((state) => state);
+
+  // Safely access clearDag with optional chaining
+  const clearDag = store?.clearDag;
+  const { undo, redo } = useTemporalStore();
+
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     onNodeSelect(node);
   }, [onNodeSelect]);
@@ -115,38 +123,46 @@ export function DagCanvas({
       <Toolbar
         onSave={onSave}
         onRun={onRun}
-        onClear={onClear}
-        onUndo={onUndo}
-        onRedo={onRedo}
+        // Pass the safely accessed clearDag function, providing a no-op default if it's undefined
+        onClear={clearDag || (() => {})}
+        onUndo={undo}
+        onRedo={redo}
         onZoomIn={onZoomIn}
         onZoomOut={onZoomOut}
         onFitView={onFitView}
         onSettings={onSettings}
         onHelp={onHelp}
       />
-      <div className="flex-1">
-        {nodes.length === 0 ? (
-          <EmptyState onAddNode={onAddNode} />
-        ) : (
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            nodeTypes={mergedNodeTypes}
-            edgeTypes={edgeTypes}
-            fitView
-            onInit={onInit}
-          >
-            <Background />
-            <Controls />
-            <MiniMap />
-          </ReactFlow>
+      <div className="flex-1 relative">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
+          nodeTypes={mergedNodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          onInit={onInit}
+        >
+          <Background />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
+        {nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto">
+              <EmptyState onAddNode={() => onAddNode({
+                type: 'source',
+                position: { x: 250, y: 250 },
+                data: { label: 'Source Node' }
+              })} />
+            </div>
+          </div>
         )}
       </div>
     </div>

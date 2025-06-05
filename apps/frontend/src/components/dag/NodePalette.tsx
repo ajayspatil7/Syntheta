@@ -36,7 +36,7 @@ const nodeTypes = [
 
 export function NodePalette({ className, onDragStart }: NodePaletteProps) {
   return (
-    <div className={cn("w-64 border-r border-border bg-background p-4", className)}>
+    <div className={cn("w-64 bg-background", className)}>
       <h3 className="mb-4 text-sm font-medium text-muted-foreground">Nodes</h3>
       <div className="space-y-2">
         {nodeTypes.map((node) => (

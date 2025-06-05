@@ -85,11 +85,16 @@ module.exports = {
   				to: {
   					height: 0
   				}
-  			}
+  			},
+  			orbit: {
+  				'0%': { transform: 'rotate(0deg) translateX(40px) rotate(0deg)' },
+  				'100%': { transform: 'rotate(360deg) translateX(40px) rotate(-360deg)' },
+  			},
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'orbit': 'orbit 2s linear infinite',
   		}
   	}
   },

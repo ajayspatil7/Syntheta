@@ -20,7 +20,9 @@ import { DagEditorLayout } from '@/components/layout/DagEditorLayout';
 import { NodePalette } from '@/components/dag/NodePalette';
 import { DagCanvas } from '@/components/dag/DagCanvas';
 import NodeConfigPanel from '@/components/dag/NodeConfigPanel';
-import { useDagStore } from '@/stores/dagStore';
+import { useDagStore, useTemporalStore, DagState } from '@/stores/dagStore';
+import { SyntheticDataDAG, DagNode, DagEdge } from '@/types/dag';
+import { v4 as uuidv4 } from 'uuid';
 
 import 'reactflow/dist/style.css';
 
@@ -72,87 +74,101 @@ function DAGBuilder() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   
-  // Use Zustand store
-  const {
-    dag,
-    selectedNode,
-    setDag,
-    addNode,
-    updateNode,
-    removeNode,
-    addEdge: addEdgeToStore,
-    removeEdge,
-    setSelectedNode,
-    updateNodeConfig,
-    // Get history actions from store
-    undo,
-    redo,
-  } = useDagStore();
+  // Use Zustand store with a single selector returning the whole state
+  const store = useDagStore((state) => state);
 
-  // Initialize nodes and edges from store
+  // Safely access state properties with nullish coalescing
+  const dag = store?.dag ?? null;
+  const selectedNode = store?.selectedNode ?? null;
+  const setDag = store?.setDag;
+  const addNode = store?.addNode;
+  const updateNode = store?.updateNode;
+  const removeNode = store?.removeNode;
+  const addEdgeToStore = store?.addEdge;
+  const removeEdge = store?.removeEdge;
+  const setSelectedNode = store?.setSelectedNode;
+  const updateNodeConfig = store?.updateNodeConfig;
+
+  // Get temporal store functions
+  const { undo, redo } = useTemporalStore();
+
+  // Use ReactFlow hooks for local node and edge state, initialized from the store
   const [nodes, setNodes, onNodesChange] = useNodesState(dag?.nodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(dag?.edges || []);
 
-  // Update local state when store changes
+  // Effect to sync store changes to local ReactFlow state
   useEffect(() => {
-    console.log('page.tsx: dag state changed', dag);
+    console.log('DAG state changed:', dag);
     if (dag) {
       setNodes(dag.nodes);
       setEdges(dag.edges);
-      console.log('page.tsx: local nodes and edges updated', dag.nodes, dag.edges);
     }
   }, [dag, setNodes, setEdges]);
 
-  // Custom onNodesChange to handle node selection and update store
+  // Custom onNodesChange: update local state and then sync to store
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
+      console.log('handleNodesChange called with changes:', changes);
+      
+      // Apply changes to local state first
+      onNodesChange(changes);
+
+      // Then sync to store
       setNodes((nds) => {
         const newNodes = applyNodeChanges(changes, nds);
         
         // Update store with new nodes
-        if (dag) {
-          setDag({
+        if (setDag) {
+          const newDag = {
             ...dag,
             nodes: newNodes,
-          });
+          };
+          console.log('Updating store with new nodes:', newDag);
+          setDag(newDag);
         }
-        
-        return newNodes;
-      });
-      
-      changes.forEach(change => {
-        if (change.type === 'select') {
-          if (change.selected) {
-            const node = nodes.find(n => n.id === change.id);
-            setSelectedNode(node || null);
-          } else {
-            if (selectedNode && selectedNode.id === change.id) {
-              setSelectedNode(null);
+
+        // Handle node selection
+        changes.forEach(change => {
+          if (change.type === 'select') {
+            if (change.selected) {
+              const node = newNodes.find(n => n.id === change.id);
+              setSelectedNode?.(node || null);
+            } else {
+              if (selectedNode && selectedNode.id === change.id) {
+                setSelectedNode?.(null);
+              }
             }
           }
-        }
-        if (change.type === 'select' && change.selected === false && nodes.every(n => n.id !== change.id)) {
-          setSelectedNode(null);
-        }
+        });
+
+        return newNodes;
       });
     },
-    [setNodes, nodes, dag, setDag, selectedNode, setSelectedNode],
+    [setNodes, dag, setDag, selectedNode, setSelectedNode],
   );
 
-  // Custom onEdgesChange to update store
+  // Custom onEdgesChange: update local state and then sync to store
   const handleEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
+      console.log('handleEdgesChange called with changes:', changes);
+      
+      // Apply changes to local state first
+      onEdgesChange(changes);
+
+      // Then sync to store
       setEdges((eds) => {
         const newEdges = applyEdgeChanges(changes, eds);
         
         // Update store with new edges
-        if (dag) {
-          setDag({
+        if (setDag) {
+          const newDag = {
             ...dag,
             edges: newEdges,
-          });
+          };
+          console.log('Updating store with new edges:', newDag);
+          setDag(newDag);
         }
-        
+
         return newEdges;
       });
     },
@@ -161,26 +177,26 @@ function DAGBuilder() {
 
   // Handler for node configuration changes
   const handleNodeConfigChange = useCallback((nodeId: string, config: any) => {
-    updateNodeConfig(nodeId, config);
+    console.log('handleNodeConfigChange called for node:', nodeId, 'with config:', config);
+    // Update the store directly for config changes
+    updateNodeConfig?.(nodeId, config);
   }, [updateNodeConfig]);
 
   const handleConnect = useCallback(
     (params: Connection | Edge) => {
-      setEdges((eds) => {
-        const newEdges = addEdge(params, eds);
-        
-        // Update store with new edge
-        if (dag) {
-          setDag({
-            ...dag,
-            edges: newEdges,
-          });
-        }
-        
-        return newEdges;
-      });
+      console.log('handleConnect called with params:', params);
+      
+      // Add edge to store
+      if (addEdgeToStore) {
+        const newEdge: DagEdge = {
+          ...params as Omit<DagEdge, 'id'>,
+          id: uuidv4(),
+        };
+        console.log('Adding new edge to store:', newEdge);
+        addEdgeToStore(newEdge);
+      }
     },
-    [setEdges, dag, setDag],
+    [addEdgeToStore],
   );
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: string) => {
@@ -202,20 +218,22 @@ function DAGBuilder() {
       // Use the bounds of the ReactFlow wrapper to calculate position
       const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
 
-      if (reactFlowInstance && reactFlowBounds) {
+      if (reactFlowInstance && reactFlowBounds && addNode) {
         const position = reactFlowInstance.project({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
         
-        const newNode = {
+        // The addNode action in the store generates the ID, so we just pass the partial node
+        const newNodePartial: Omit<DagNode, 'id'> = {
           type,
           position,
-          data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` },
+          data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node`, config: {} }, // Ensure config is initialized
         };
 
+        console.log('handleDrop - adding new node to store:', newNodePartial);
         // Add node to store
-        addNode(newNode);
+        addNode(newNodePartial);
       }
     },
     [reactFlowInstance, addNode],
@@ -243,6 +261,7 @@ function DAGBuilder() {
 
   // Save DAG to backend
   const handleSaveDAG = useCallback(async () => {
+    console.log('handleSaveDAG called');
     if (!reactFlowInstance || !dag) return;
 
     const flow = reactFlowInstance.toObject();
@@ -257,20 +276,25 @@ function DAGBuilder() {
     };
 
     try {
-      const response = await fetch(API_URL, {
-        method: dagId ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dagData),
-      });
+      // We need setDag to be defined here
+      if (setDag) {
+        console.log('handleSaveDAG - saving dag data:', dagData);
+        const response = await fetch(API_URL, {
+          method: dagId ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dagData),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to save DAG');
+        if (!response.ok) {
+          throw new Error('Failed to save DAG');
+        }
+
+        const savedDag = await response.json();
+        console.log('handleSaveDAG - saved dag response:', savedDag);
+        setDag(savedDag);
       }
-
-      const savedDag = await response.json();
-      setDag(savedDag);
     } catch (error) {
       console.error('Error saving DAG:', error);
       // Handle error (show notification, etc.)
@@ -279,25 +303,31 @@ function DAGBuilder() {
 
   // Load DAG from backend
   const handleLoadDAG = useCallback(async (dagId: string) => {
-    try {
-      const response = await fetch(`${API_URL}/${dagId}`);
-      if (!response.ok) {
-        throw new Error('Failed to load DAG');
-      }
+    console.log('handleLoadDAG called with id:', dagId);
+    // We need setDag to be defined here
+    if (setDag) {
+      try {
+        const response = await fetch(`${API_URL}/${dagId}`);
+        if (!response.ok) {
+          throw new Error('Failed to load DAG');
+        }
 
-      const loadedDag = await response.json();
-      setDag(loadedDag);
-    } catch (error) {
-      console.error('Error loading DAG:', error);
-      // Handle error (show notification, etc.)
+        const loadedDag = await response.json();
+        console.log('handleLoadDAG - loaded dag response:', loadedDag);
+        setDag(loadedDag);
+      } catch (error) {
+        console.error('Error loading DAG:', error);
+        // Handle error (show notification, etc.)
+      }
     }
   }, [setDag]);
 
   const handleClearDAG = useCallback(() => {
-    setNodes([]);
-    setEdges([]);
+    console.log('handleClearDAG called');
+    // Use the store action to clear the DAG
+    store?.clearDag?.();
     localStorage.removeItem('currentDagId'); // Clear stored ID on new DAG
-  }, [setNodes, setEdges]);
+  }, [store]); // Depend on the entire store object
 
   const handleZoomIn = useCallback(() => {
     reactFlowInstance?.zoomIn();
@@ -312,15 +342,16 @@ function DAGBuilder() {
   }, [reactFlowInstance]);
 
   const handleSettings = useCallback(() => {
-    console.log('Opening settings...');
+    console.log('handleSettings called');
   }, []);
 
   const handleHelp = useCallback(() => {
-    console.log('Opening help...');
+    console.log('handleHelp called');
   }, []);
 
   // Handler for running the DAG
   const handleRunDAG = useCallback(async () => {
+    console.log('handleRunDAG called');
     if (!dag) {
       console.error('No DAG to run.');
       return;
@@ -353,14 +384,14 @@ function DAGBuilder() {
 
   // Handler for the "Add Your First Node" button in EmptyState
   const handleEmptyStateAddNode = useCallback(() => {
-    console.log('page.tsx: handleEmptyStateAddNode called');
+    console.log('handleEmptyStateAddNode called');
     const defaultNode = {
       type: 'source', // Default to Source node
       position: { x: 250, y: 250 }, // Default position
       data: { label: 'Source Node' }, // Default label
     };
-    addNode(defaultNode);
-    console.log('page.tsx: addNode store action dispatched');
+    addNode?.(defaultNode);
+    console.log('handleEmptyStateAddNode - addNode store action dispatched');
   }, [addNode]);
 
   // Example of how to use load (add buttons/input in render)
@@ -380,26 +411,34 @@ function DAGBuilder() {
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
           return;
         }
-         // Delete selected nodes and edges
-        setNodes((nds) => nds.filter(node => !node.selected));
-        setEdges((eds) => eds.filter(edge => !edge.selected));
-         setSelectedNode(null); // Deselect any node after deletion
-      } else if ((event.metaKey || event.ctrlKey) && event.key === 'z') { // Cmd+Z or Ctrl+Z
-        event.preventDefault(); // Prevent default undo behavior
-        // Implement undo functionality
-      } else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'Z') { // Cmd+Shift+Z or Ctrl+Shift+Z
-         event.preventDefault(); // Prevent default redo behavior
-         // Implement redo functionality
-      } else if (event.key === 'Escape') { // Esc key
-         setSelectedNode(null); // Deselect node
+
+        // Delete selected nodes and edges
+        const nodesToDelete = nodes.filter(node => node.selected);
+        const edgesToDelete = edges.filter(edge => edge.selected);
+
+        console.log('Deleting:', { nodesToDelete, edgesToDelete });
+
+        nodesToDelete.forEach(node => removeNode?.(node.id));
+        edgesToDelete.forEach(edge => removeEdge?.(edge.id));
+
+        setSelectedNode?.(null);
+      } else if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+        event.preventDefault();
+        console.log('Undo shortcut pressed');
+        undo();
+      } else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'Z') {
+        event.preventDefault();
+        console.log('Redo shortcut pressed');
+        redo();
+      } else if (event.key === 'Escape') {
+        setSelectedNode?.(null);
       }
-       // Add other shortcuts here (Cmd+A, Cmd+D, Space for pan)
     };
 
     const wrapper = reactFlowWrapper.current;
     if (wrapper) {
       wrapper.addEventListener('keydown', handleKeyDown);
-      wrapper.focus(); // Ensure the wrapper can receive focus
+      wrapper.focus();
     }
 
     return () => {
@@ -407,7 +446,7 @@ function DAGBuilder() {
         wrapper.removeEventListener('keydown', handleKeyDown);
       }
     };
-  }, [nodes, edges, setNodes, setEdges, setSelectedNode, reactFlowWrapper]); // Add dependencies
+  }, [nodes, edges, removeNode, removeEdge, setSelectedNode, undo, redo]);
 
   // Select node when config is changed (optional, might refine this)
   useEffect(() => {
@@ -415,25 +454,48 @@ function DAGBuilder() {
         // Find the potentially updated node in the current nodes array
         const updatedNode = nodes.find(n => n.id === selectedNode.id);
         if (updatedNode) {
-            setSelectedNode(updatedNode);
+            setSelectedNode?.(updatedNode);
         }
     }
-  }, [nodes, selectedNode]);
+  }, [nodes, selectedNode, setSelectedNode]);
+
+  // Log store state changes
+  useEffect(() => {
+    const unsubscribe = useDagStore.subscribe(
+      (state) => {
+        console.log('Zustand store dag state updated:', state.dag);
+      }
+    );
+
+    const unsubscribeTemporal = useDagStore.temporal.subscribe(
+      (state) => {
+        console.log('Temporal store state:', {
+          pastStates: state.pastStates.length,
+          futureStates: state.futureStates.length
+        });
+      }
+    );
+
+    return () => {
+      unsubscribe();
+      unsubscribeTemporal();
+    };
+  }, []);
 
   return (
     <DagEditorLayout
       nodePalette={<NodePalette onDragStart={onDragStart} />}
       dagCanvas={
         <DagCanvas
-          nodes={nodes}
-          edges={edges}
+          nodes={nodes} // Pass nodes from useNodesState
+          edges={edges} // Pass edges from useEdgesState
           onNodesChange={handleNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={handleConnect}
           onDrop={handleDrop}
           onDragOver={(e: React.DragEvent<HTMLDivElement>) => e.preventDefault()}
           selectedNode={selectedNode}
-          onNodeSelect={setSelectedNode}
+          onNodeSelect={setSelectedNode || (() => {})}
           onSave={handleSaveDAG}
           onRun={handleRunDAG}
           onClear={handleClearDAG}

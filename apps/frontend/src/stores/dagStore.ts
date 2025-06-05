@@ -1,10 +1,13 @@
-import { create, StateCreator } from 'zustand';
-import { SyntheticDataDAG, DagNode, DagEdge, NodeValidationRules } from '@/types/dag';
+import { create, StateCreator, StoreApi } from 'zustand';
+import { SyntheticDataDAG, DagNode, DagEdge } from '@/types/dag';
 import { v4 as uuidv4 } from 'uuid';
+import { temporal, TemporalState } from 'zundo';
+// import shallow from 'zustand/shallow'; // Uncomment if you want to use shallow equality
 
-interface DagState {
+// Define the base state interface
+export interface DagState {
   // DAG state
-  dag: SyntheticDataDAG | null;
+  dag: SyntheticDataDAG;
   selectedNode: DagNode | null;
   selectedEdge: DagEdge | null;
   
@@ -18,15 +21,10 @@ interface DagState {
   setSelectedNode: (node: DagNode | null) => void;
   setSelectedEdge: (edge: DagEdge | null) => void;
   updateNodeConfig: (nodeId: string, config: any) => void;
-
-  // History state and actions
-  history: SyntheticDataDAG[];
-  historyIndex: number;
-  saveHistory: () => void;
-  undo: () => void;
-  redo: () => void;
+  clearDag: () => void;
 }
 
+// Create the base store
 const createDagStore: StateCreator<DagState> = (set, get) => ({
   // Initial state
   dag: {
@@ -37,14 +35,9 @@ const createDagStore: StateCreator<DagState> = (set, get) => ({
   selectedNode: null,
   selectedEdge: null,
 
-  // History initial state
-  history: [],
-  historyIndex: -1,
-
   // Actions
   setDag: (dag: SyntheticDataDAG) => {
     set({ dag });
-    get().saveHistory();
   },
   
   addNode: (node: Omit<DagNode, 'id'>) => {
@@ -95,44 +88,44 @@ const createDagStore: StateCreator<DagState> = (set, get) => ({
       id: newId,
       data: {
         ...node.data,
-        config: getDefaultConfig(node.type || '') // Initialize config here
+        config: getDefaultConfig(node.type || '')
       }
     };
     
-    set((state: DagState) => ({
-      dag: state.dag ? {
-        ...state.dag,
-        nodes: [...state.dag.nodes, newNode],
-      } : null,
-    }));
-    get().saveHistory();
+    const currentState = get();
+    set({
+      dag: {
+        ...currentState.dag,
+        nodes: [...currentState.dag.nodes, newNode],
+      }
+    });
   },
 
   updateNode: (nodeId: string, data: Partial<DagNode['data']>) => {
-    set((state: DagState) => ({
-      dag: state.dag ? {
-        ...state.dag,
-        nodes: state.dag.nodes.map((node) =>
+    const currentState = get();
+    set({
+      dag: {
+        ...currentState.dag,
+        nodes: currentState.dag.nodes.map((node) =>
           node.id === nodeId
             ? { ...node, data: { ...node.data, ...data } }
             : node
         ),
-      } : null,
-    }));
-    get().saveHistory();
+      }
+    });
   },
 
   removeNode: (nodeId: string) => {
-    set((state: DagState) => ({
-      dag: state.dag ? {
-        ...state.dag,
-        nodes: state.dag.nodes.filter((node) => node.id !== nodeId),
-        edges: state.dag.edges.filter(
+    const currentState = get();
+    set({
+      dag: {
+        ...currentState.dag,
+        nodes: currentState.dag.nodes.filter((node) => node.id !== nodeId),
+        edges: currentState.dag.edges.filter(
           (edge) => edge.source !== nodeId && edge.target !== nodeId
         ),
-      } : null,
-    }));
-    get().saveHistory();
+      }
+    });
   },
 
   addEdge: (edge: Omit<DagEdge, 'id'>) => {
@@ -142,87 +135,113 @@ const createDagStore: StateCreator<DagState> = (set, get) => ({
       id: newId,
     };
     
-    set((state: DagState) => ({
-      dag: state.dag ? {
-        ...state.dag,
-        edges: [...state.dag.edges, newEdge],
-      } : null,
-    }));
-    get().saveHistory();
+    const currentState = get();
+    set({
+      dag: {
+        ...currentState.dag,
+        edges: [...currentState.dag.edges, newEdge],
+      }
+    });
   },
 
   removeEdge: (edgeId: string) => {
-    set((state: DagState) => ({
-      dag: state.dag ? {
-        ...state.dag,
-        edges: state.dag.edges.filter((edge) => edge.id !== edgeId),
-      } : null,
-    }));
-    get().saveHistory();
+    const currentState = get();
+    set({
+      dag: {
+        ...currentState.dag,
+        edges: currentState.dag.edges.filter((edge) => edge.id !== edgeId),
+      }
+    });
   },
 
   setSelectedNode: (node: DagNode | null) => set({ selectedNode: node }),
   setSelectedEdge: (edge: DagEdge | null) => set({ selectedEdge: edge }),
 
   updateNodeConfig: (nodeId: string, config: any) => {
-    set((state: DagState) => ({
-      dag: state.dag ? {
-        ...state.dag,
-        nodes: state.dag.nodes.map((node) =>
+    const currentState = get();
+    set({
+      dag: {
+        ...currentState.dag,
+        nodes: currentState.dag.nodes.map((node) =>
           node.id === nodeId
             ? { ...node, data: { ...node.data, config } }
             : node
         ),
-      } : null,
-    }));
-    get().saveHistory();
-  },
-
-  // History actions
-  saveHistory: () => {
-    const currentDag = get().dag;
-    if (currentDag) {
-      set((state) => {
-        const newHistory = state.history.slice(0, state.historyIndex + 1);
-        newHistory.push(currentDag);
-        return {
-          history: newHistory,
-          historyIndex: newHistory.length - 1,
-        };
-      });
-    }
-  },
-
-  undo: () => {
-    set((state) => {
-      if (state.historyIndex > 0) {
-        const newIndex = state.historyIndex - 1;
-        const previousDag = state.history[newIndex];
-        return {
-          dag: previousDag,
-          historyIndex: newIndex,
-        };
       }
-      return {}; // No change if at the beginning of history
     });
   },
 
-  redo: () => {
-    set((state) => {
-      if (state.historyIndex < state.history.length - 1) {
-        const newIndex = state.historyIndex + 1;
-        const nextDag = state.history[newIndex];
-        return {
-          dag: nextDag,
-          historyIndex: newIndex,
-        };
-      }
-      return {}; // No change if at the end of history
+  clearDag: () => {
+    set({
+      dag: {
+        name: 'New DAG',
+        nodes: [],
+        edges: [],
+      },
+      selectedNode: null,
+      selectedEdge: null,
     });
   },
 });
 
-export const useDagStore = create<DagState>(
-  // Add middleware here if needed (e.g., persist)
-  createDagStore
-); 
+// Create the store with temporal middleware
+export const useDagStore = create<DagState>()(
+  temporal(createDagStore, {
+    partialize: (state) => ({
+      dag: state.dag,
+    }),
+    limit: 50,
+    onSave: (state) => {
+      console.log('Saving temporal state:', state);
+    },
+  })
+);
+
+// Export temporal actions and state
+export const useTemporalStore = () => {
+  const temporalStore = useDagStore.temporal;
+  const state = temporalStore.getState();
+  
+  return {
+    undo: () => {
+      if (state.pastStates.length > 0) {
+        console.log('Undoing to state:', state.pastStates[state.pastStates.length - 1]);
+        state.undo();
+      }
+    },
+    redo: () => {
+      if (state.futureStates.length > 0) {
+        console.log('Redoing to state:', state.futureStates[0]);
+        state.redo();
+      }
+    },
+    clearHistory: state.clear,
+    canUndo: state.pastStates.length > 0,
+    canRedo: state.futureStates.length > 0,
+  };
+};
+
+// Export convenience hooks for undo/redo state
+export const useCanUndo = () => useDagStore.temporal.getState().pastStates.length > 0;
+export const useCanRedo = () => useDagStore.temporal.getState().futureStates.length > 0;
+
+// Export convenience functions for undo/redo actions
+export const undo = () => {
+  const state = useDagStore.temporal.getState();
+  if (state.pastStates.length > 0) {
+    console.log('Undoing to state:', state.pastStates[state.pastStates.length - 1]);
+    state.undo();
+  }
+};
+
+export const redo = () => {
+  const state = useDagStore.temporal.getState();
+  if (state.futureStates.length > 0) {
+    console.log('Redoing to state:', state.futureStates[0]);
+    state.redo();
+  }
+};
+
+export const clearHistory = () => useDagStore.temporal.getState().clear();
+
+export default useDagStore; 
