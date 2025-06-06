@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useState, useMemo } from 'react';
 import ReactFlow, {
   Background,
@@ -14,6 +16,8 @@ import ReactFlow, {
   OnEdgesChange,
   applyNodeChanges,
   applyEdgeChanges,
+  Handle,
+  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Button } from "@/components/ui/button";
@@ -32,13 +36,6 @@ function NodeWrapper(props: ReactFlowNodeProps) {
   const { data } = props;
   return <CustomNode {...data} />;
 }
-
-const nodeTypes = {
-  source: SourceNode,
-  generator: GeneratorNode,
-  evaluator: EvaluatorNode,
-  exporter: ExporterNode,
-};
 
 const edgeTypes = {
   default: CustomEdge,
@@ -68,6 +65,7 @@ interface DagCanvasProps {
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
   nodeTypes?: Record<string, React.ComponentType<any>>;
   onAddNode: (newNode: Omit<Node, 'id'>) => void;
+  onPaneClick: () => void;
 }
 
 export function DagCanvas({
@@ -94,6 +92,7 @@ export function DagCanvas({
   onDragOver,
   nodeTypes: customNodeTypes,
   onAddNode,
+  onPaneClick,
 }: DagCanvasProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -108,22 +107,32 @@ export function DagCanvas({
     onNodeSelect(node);
   }, [onNodeSelect]);
 
-  const onPaneClick = useCallback(() => {
-    onNodeSelect(null);
-  }, [onNodeSelect]);
-
   // Merge custom node types with default ones
   const mergedNodeTypes = useMemo(() => ({
     ...nodeTypes,
     ...customNodeTypes,
   }), [customNodeTypes]);
 
+  // Handle node changes
+  const handleNodesChange = useCallback((changes: any[]) => {
+    onNodesChange(changes);
+  }, [onNodesChange]);
+
+  // Handle edge changes
+  const handleEdgesChange = useCallback((changes: any[]) => {
+    onEdgesChange(changes);
+  }, [onEdgesChange]);
+
+  // Handle connections
+  const handleConnect = useCallback((params: Connection | Edge) => {
+    onConnect(params);
+  }, [onConnect]);
+
   return (
     <div className={cn("flex flex-col h-full w-full", isFullscreen && "fixed inset-0 z-50")} ref={reactFlowWrapper}>
       <Toolbar
         onSave={onSave}
         onRun={onRun}
-        // Pass the safely accessed clearDag function, providing a no-op default if it's undefined
         onClear={clearDag || (() => {})}
         onUndo={undo}
         onRedo={redo}
@@ -137,9 +146,9 @@ export function DagCanvas({
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onNodesChange={handleNodesChange}
+          onEdgesChange={handleEdgesChange}
+          onConnect={handleConnect}
           onDragOver={onDragOver}
           onDrop={onDrop}
           onNodeClick={onNodeClick}
@@ -148,6 +157,9 @@ export function DagCanvas({
           edgeTypes={edgeTypes}
           fitView
           onInit={onInit}
+          nodesDraggable={true}
+          nodesConnectable={true}
+          elementsSelectable={true}
         >
           <Background />
           <Controls />
@@ -188,7 +200,8 @@ function SourceNode({ data }: { data: any }) {
           <p className="text-xs text-muted-foreground">{data.type}</p>
         </div>
       </div>
-      <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
+      {/* <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" /> */}
+      <Handle type="source" position={Position.Right} className="w-3 h-3" />
     </div>
   );
 }
@@ -211,7 +224,9 @@ function GeneratorNode({ data }: { data: any }) {
           <p className="text-xs text-muted-foreground">{data.type}</p>
         </div>
       </div>
-      <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
+      {/* <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" /> */}
+      <Handle type="target" position={Position.Left} className="w-3 h-3" />
+      <Handle type="source" position={Position.Right} className="w-3 h-3" />
     </div>
   );
 }
@@ -234,7 +249,9 @@ function EvaluatorNode({ data }: { data: any }) {
           <p className="text-xs text-muted-foreground">{data.type}</p>
         </div>
       </div>
-      <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
+      {/* <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" /> */}
+      <Handle type="target" position={Position.Left} className="w-3 h-3" />
+      <Handle type="source" position={Position.Right} className="w-3 h-3" />
     </div>
   );
 }
@@ -257,7 +274,16 @@ function ExporterNode({ data }: { data: any }) {
           <p className="text-xs text-muted-foreground">{data.type}</p>
         </div>
       </div>
-      <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" />
+      {/* <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100" /> */}
+      <Handle type="target" position={Position.Left} className="w-3 h-3" />
     </div>
   );
-} 
+}
+
+// Define nodeTypes outside of the component to avoid recreation on each render
+const nodeTypes = {
+  source: SourceNode,
+  generator: GeneratorNode,
+  evaluator: EvaluatorNode,
+  exporter: ExporterNode,
+}; 

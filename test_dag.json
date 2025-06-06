@@ -1,0 +1,37 @@
+{
+  "name": "Test DAG",
+  "description": "A test DAG for saving and loading",
+  "nodes": [
+    {
+      "id": "node1",
+      "type": "source",
+      "position": {"x": 100, "y": 100},
+      "data": {
+        "label": "CSV Source",
+        "type": "csv",
+        "parameters": {
+          "file_path": "/data/input.csv"
+        }
+      }
+    },
+    {
+      "id": "node2",
+      "type": "transform",
+      "position": {"x": 300, "y": 100},
+      "data": {
+        "label": "Data Transform",
+        "type": "transform",
+        "parameters": {
+          "operation": "filter"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge1",
+      "source": "node1",
+      "target": "node2"
+    }
+  ]
+} 

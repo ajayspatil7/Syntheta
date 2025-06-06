@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Database, Cpu, BarChart2, FileOutput } from 'lucide-react';
 import { cn } from "@/lib/utils";
