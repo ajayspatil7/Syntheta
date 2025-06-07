@@ -1,21 +1,33 @@
+# apps/backend/Dockerfile.dev
 FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for building Python packages
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    pkg-config \
+    libffi-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip first
+RUN pip install --upgrade pip
 
 # Copy requirements file
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install grpcio separately with pre-built binary to avoid compilation issues
+RUN pip install --no-cache-dir grpcio
+
+# Install other Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
 
+# Expose port
+EXPOSE 8000
+
 # Start the development server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

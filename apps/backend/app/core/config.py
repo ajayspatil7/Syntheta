@@ -21,7 +21,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/syntheta"
+    POSTGRES_DB: str = "syntheta"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "postgres"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -32,8 +35,6 @@ class Settings(BaseSettings):
     TEMPORAL_NAMESPACE: str = "default"
     
     # Authentication
-    AUTH0_DOMAIN: str
-    AUTH0_API_AUDIENCE: str
     AUTH0_ALGORITHMS: list[str] = ["RS256"]
     AUTH_SECRET_KEY: str = "your-secret-key"
     AUTH_ALGORITHM: str = "HS256"
@@ -59,6 +60,12 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     EMAILS_FROM_EMAIL: Optional[str] = None
     EMAILS_FROM_NAME: Optional[str] = None
+    
+    # JWT
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     class Config:
         env_file = ".env"

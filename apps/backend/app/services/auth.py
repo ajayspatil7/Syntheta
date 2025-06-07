@@ -30,7 +30,14 @@ class AuthService:
             email=user_in.email,
             hashed_password=get_password_hash(user_in.password),
             full_name=user_in.full_name,
-            is_active=True
+            employment_status=user_in.employment_status,
+            current_role=user_in.current_role,
+            experience_level=user_in.experience_level,
+            primary_interests=user_in.primary_interests,
+            how_did_you_hear=user_in.how_did_you_hear,
+            is_active=True,
+            is_superuser=False,
+            is_email_verified=False  # Email verification will be handled separately
         )
         db.add(user)
         db.commit()

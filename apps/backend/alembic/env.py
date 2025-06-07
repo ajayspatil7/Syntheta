@@ -1,15 +1,26 @@
 from logging.config import fileConfig
-
-import os  # Import the os module
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
+import os
+import sys
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+# Add the parent directory to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import your settings
+from app.core.config import settings
+from app.db.session import Base
+
+# Import all model modules here to ensure they are registered with Base.metadata
+# (Assuming dagnode and dagedge models are defined within these files)
+from app.models import user, workspace, dag, auth
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Set the SQLAlchemy URL from your settings
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -18,21 +29,11 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-
-# Import your Base object and set target_metadata
-from app.db.session import Base  # Import Base from your session file
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
+# other values from the config, defined by the needs of env.py, can be
+# acquired: property by name eg: config.get_main_option('some_option')
 # ... etc.
-
-# get the database url from the environment variable
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -46,8 +47,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    # Use the environment variable URL if available, otherwise fall back to ini file
-    url = DATABASE_URL if DATABASE_URL else config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -66,12 +66,9 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # Use the environment variable URL
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
-        # Pass the DATABASE_URL from environment directly
-        url=DATABASE_URL, # Use environment variable
         poolclass=pool.NullPool,
     )
 

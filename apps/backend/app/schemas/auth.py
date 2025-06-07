@@ -1,15 +1,18 @@
 from pydantic import BaseModel, EmailStr, constr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str
 
-class UserCreate(BaseModel):
-    email: EmailStr
+class UserCreate(UserBase):
     password: constr(min_length=8)
-    full_name: str
+    employment_status: Optional[str] = None
+    current_role: Optional[str] = None
+    experience_level: Optional[str] = None
+    primary_interests: Optional[List[str]] = None
+    how_did_you_hear: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -18,21 +21,26 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
+    token_type: str
 
 class TokenPayload(BaseModel):
     sub: Optional[int] = None
     exp: Optional[datetime] = None
     type: Optional[str] = None
 
-class UserResponse(BaseModel):
+class UserResponse(UserBase):
     id: int
-    email: EmailStr
-    full_name: str
     is_active: bool
     is_superuser: bool
     is_email_verified: bool
+    employment_status: Optional[str] = None
+    current_role: Optional[str] = None
+    experience_level: Optional[str] = None
+    primary_interests: Optional[List[str]] = None
+    how_did_you_hear: Optional[str] = None
+    last_login: Optional[datetime] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

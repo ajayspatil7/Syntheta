@@ -3,25 +3,36 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, EmailStr
 
 from app.core.config import settings
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import create_access_token, create_refresh_token, get_password_hash, verify_password
 from app.core.deps import get_current_active_user, get_db
 from app.models.user import User
-from app.schemas.auth import UserCreate, UserResponse, Token, PasswordReset, PasswordResetConfirm
+from app.schemas.auth import UserCreate, UserResponse, Token, PasswordReset, PasswordResetConfirm, UserLogin
 from app.services.auth import AuthService
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=Token)
 def register(
     user_in: UserCreate,
     db: Session = Depends(get_db)
-) -> User:
+) -> Token:
     """
-    Register a new user.
+    Register a new user and return access tokens.
     """
-    return AuthService.create_user(db=db, user_in=user_in)
+    user = AuthService.create_user(db=db, user_in=user_in)
+    
+    # Create tokens for the new user
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
+    
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer"
+    )
 
 @router.post("/login", response_model=Token)
 def login(
@@ -93,4 +104,29 @@ def reset_password(
         token=reset_data.token,
         new_password=reset_data.new_password
     )
+    return {"message": "Password updated successfully"}
+
+class DirectPasswordReset(BaseModel):
+    email: EmailStr
+    new_password: str
+
+@router.post("/password-reset/direct", status_code=status.HTTP_200_OK)
+def direct_password_reset(
+    reset_data: DirectPasswordReset,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Direct password reset using email and new password.
+    """
+    user = db.query(User).filter(User.email == reset_data.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update password
+    user.hashed_password = get_password_hash(reset_data.new_password)
+    db.commit()
+    
     return {"message": "Password updated successfully"} 

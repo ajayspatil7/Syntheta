@@ -113,19 +113,31 @@ export default function Signup() {
     setIsLoading(true);
     
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('http://localhost:8000/api/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.fullName,
+          employment_status: formData.employmentStatus,
+          current_role: formData.currentRole,
+          experience_level: formData.experienceLevel,
+          primary_interests: formData.primaryInterests,
+          how_did_you_hear: formData.howDidYouHear
+        }),
       });
       
       if (response.ok) {
-        // Success - redirect to dashboard or verification page
+        const data = await response.json();
+        // Store tokens in localStorage
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        // Redirect to dashboard
         router.push('/dashboard');
       } else {
         const data = await response.json();
-        setErrors({ submit: data.message || 'Signup failed. Please try again.' });
+        setErrors({ submit: data.detail || 'Signup failed. Please try again.' });
       }
     } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' });

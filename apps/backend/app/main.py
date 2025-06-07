@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api.routes import dags, db
+from app.api.routes import dags, db, auth
 
 app = FastAPI(
     title="Syntheta API",
@@ -26,7 +26,7 @@ async def create_tables():
     try:
         # Import inside the function to avoid circular imports
         from app.db.session import Base, engine
-        from app.models import user, workspace, dag
+        from app.models import user, workspace, dag, auth as auth_models
         from sqlalchemy import text  # Import text for raw SQL
         
         print("📦 Imported database models successfully")
@@ -40,20 +40,22 @@ async def create_tables():
         print("🔧 Creating database tables...")
         
         # This will create all tables defined in your SQLAlchemy models
-        Base.metadata.create_all(bind=engine)
+        # NOTE: Using Alembic for migrations is the preferred way to manage schema changes
+        # Running create_all here is useful for initial setup but shouldn't replace Alembic.
+        # Base.metadata.create_all(bind=engine) # Commenting this out as we use Alembic
         
-        print("✅ Database tables created successfully!")
+        print("✅ Database tables creation/check complete (assuming Alembic is used)!")
         
-        # Check which tables were created
+        # Check which tables are present (as seen by SQLAlchemy metadata)
         from sqlalchemy import inspect
         inspector = inspect(engine)
         table_names = inspector.get_table_names()
-        print(f"📋 Available tables: {table_names}")
+        print(f"📋 Available tables detected by SQLAlchemy: {table_names}")
         
         if table_names:
             print("🎉 Success! Tables are ready for use.")
         else:
-            print("⚠️  No tables found - there might be an issue with model definitions")
+            print("⚠️  No tables found - run alembic upgrade head")
         
     except Exception as e:
         print(f"❌ Error during startup: {e}")
@@ -62,8 +64,8 @@ async def create_tables():
         print("⚠️  App will continue, but database operations may fail")
 
 # Include routers
-app.include_router(dags.router, prefix="/api/v1")
-app.include_router(db.router, prefix="/api")
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(dags.router, prefix="/api/v1/dags", tags=["dags"])
 
 @app.get("/")
 async def root():

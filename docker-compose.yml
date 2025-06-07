@@ -28,9 +28,12 @@ services:
       - ENVIRONMENT=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/syntheta
       - REDIS_URL=redis://redis:6379/0
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   db:
     image: postgres:15-alpine
@@ -54,6 +57,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
 
   temporal:
     image: temporalio/auto-setup:1.22.3
@@ -63,8 +71,17 @@ services:
       - "7235:7235"
     environment:
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - SKIP_SCHEMA_SETUP=false
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=db
     volumes:
       - temporal_data:/var/lib/temporal
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

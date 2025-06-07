@@ -8,31 +8,46 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/syntheta
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379/0
-      - AUTH0_DOMAIN=YOUR_AUTH0_DOMAIN
-      - AUTH0_API_AUDIENCE=YOUR_AUTH0_API_AUDIENCE
+    env_file:
+      - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
     image: postgres:15
+    container_name: syntheta-db
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=syntheta
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "6543:5432"  # External port changed to avoid conflicts
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
+    container_name: syntheta-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -44,7 +59,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 

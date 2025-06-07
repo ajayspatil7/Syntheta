@@ -1,18 +1,32 @@
+# apps/backend/requirements.txt
+# Core FastAPI dependencies
 fastapi>=0.68.0
 uvicorn>=0.15.0
+
+# Database
 sqlalchemy>=1.4.0
 psycopg2-binary>=2.9.0
+alembic>=1.13.1
+
+# Validation and settings
 pydantic>=1.8.0
 pydantic-settings>=2.0.0
 python-dotenv>=0.19.0
-redis>=4.0.0
+email-validator>=2.0.0
+
+# Authentication and security
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=3.2.0
+
+# File handling
 python-multipart>=0.0.5
-alembic>=1.13.1
-temporalio>=1.4.0
-temporal-python-sdk>=1.0.0
-email-validator>=2.0.0
-slowapi>=0.1.8
-itsdangerous>=2.1.2  # For secure token generation
-bcrypt>=4.0.1 
+
+# Utilities
+python-dateutil>=2.8.0
+
+# Optional: Redis (comment out if not using immediately)
+# redis>=4.0.0
+
+# Remove grpcio for now - we can add Temporal later when needed
+# temporal-io

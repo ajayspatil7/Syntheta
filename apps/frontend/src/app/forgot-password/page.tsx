@@ -7,14 +7,15 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function Login() {
+export default function ForgotPassword() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,8 +36,14 @@ export default function Login() {
       newErrors.email = 'Invalid email address';
     }
     
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
+    if (!formData.newPassword) {
+      newErrors.newPassword = 'New password is required';
+    } else if (formData.newPassword.length < 8) {
+      newErrors.newPassword = 'Password must be at least 8 characters';
+    }
+    
+    if (formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
     
     setErrors(newErrors);
@@ -53,25 +60,33 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('username', formData.email);
-      formDataToSend.append('password', formData.password);
-
-      const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const response = await fetch('http://localhost:8000/api/v1/auth/password-reset/direct', {
         method: 'POST',
-        body: formDataToSend,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          new_password: formData.newPassword
+        }),
       });
       
       if (response.ok) {
-        const data = await response.json();
-        // Store tokens in localStorage
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-        // Redirect to dashboard
-        router.push('/dashboard');
+        // Redirect to login page after successful password reset
+        router.push('/login');
       } else {
         const data = await response.json();
-        setErrors({ submit: data.detail || 'Login failed. Please try again.' });
+        // Handle validation errors
+        if (data.detail && Array.isArray(data.detail)) {
+          // Handle multiple validation errors
+          const validationErrors = data.detail.reduce((acc: Record<string, string>, error: any) => {
+            const field = error.loc[error.loc.length - 1];
+            acc[field] = error.msg;
+            return acc;
+          }, {});
+          setErrors(validationErrors);
+        } else {
+          // Handle single error message
+          setErrors({ submit: data.detail || 'Password reset failed. Please try again.' });
+        }
       }
     } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' });
@@ -82,7 +97,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 md:p-10 relative overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Background Image with Blur */}
       {/* Ambient Background Blobs - More Subtle */}
       <div className="absolute top-[10%] left-[10%] w-48 h-48 bg-blue-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob"></div>
       <div className="absolute bottom-[10%] right-[10%] w-48 h-48 bg-indigo-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob animation-delay-2000"></div>
@@ -94,8 +108,8 @@ export default function Login() {
         
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-semibold page-heading-gradient">Welcome Back</h1>
-          <p className="text-base text-gray-600">Sign in to your Syntheta account</p>
+          <h1 className="text-4xl md:text-5xl font-semibold page-heading-gradient">Reset Password</h1>
+          <p className="text-base text-gray-600">Enter your email and new password</p>
         </div>
 
         {errors.submit && (
@@ -105,7 +119,7 @@ export default function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Login Information */}
+          {/* Form Fields */}
           <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="email" className="text-xs uppercase font-medium text-gray-500">Email Address *</Label>
@@ -122,23 +136,31 @@ export default function Login() {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="password" className="text-xs uppercase font-medium text-gray-500">Password *</Label>
+              <Label htmlFor="newPassword" className="text-xs uppercase font-medium text-gray-500">New Password *</Label>
               <Input 
-                id="password" 
+                id="newPassword" 
                 type="password" 
                 placeholder="••••••••" 
-                value={formData.password} 
+                value={formData.newPassword} 
                 onChange={handleChange} 
                 required 
-                className={`w-full px-4 py-2 rounded-lg bg-white/60 border ${errors.password ? 'border-red-300' : 'border-gray-200'} text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200`}
+                className={`w-full px-4 py-2 rounded-lg bg-white/60 border ${errors.newPassword ? 'border-red-300' : 'border-gray-200'} text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200`}
               />
-              {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
+              {errors.newPassword && <p className="text-xs text-red-600 mt-1">{errors.newPassword}</p>}
             </div>
 
-            <div className="text-right">
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                Forgot Password?
-              </Link>
+            <div className="space-y-1">
+              <Label htmlFor="confirmPassword" className="text-xs uppercase font-medium text-gray-500">Confirm New Password *</Label>
+              <Input 
+                id="confirmPassword" 
+                type="password" 
+                placeholder="••••••••" 
+                value={formData.confirmPassword} 
+                onChange={handleChange} 
+                required 
+                className={`w-full px-4 py-2 rounded-lg bg-white/60 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-200'} text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200`}
+              />
+              {errors.confirmPassword && <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>}
             </div>
           </div>
 
@@ -149,13 +171,13 @@ export default function Login() {
               disabled={isLoading}
               className="w-full text-lg px-6 py-3 rounded-full bg-gray-800 text-white font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? 'Resetting Password...' : 'Reset Password'}
             </Button>
             
             <p className="text-center text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-600 font-medium hover:underline">
-                Sign Up
+              Remember your password?{' '}
+              <Link href="/login" className="text-blue-600 font-medium hover:underline">
+                Sign In
               </Link>
             </p>
           </div>
