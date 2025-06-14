@@ -5,14 +5,26 @@
 @layer base {
   :root {
     /* Syntheta Brand Colors */
-    --syntheta-background: 0 0% 97%; /* #F9F7F7 */
-    --syntheta-surface: 220 23% 90%; /* #DBE2EF */
-    --syntheta-primary: 216 64% 47%; /* #3F72AF */
-    --syntheta-dark: 214 65% 19%; /* #112D4E */
-    --syntheta-neutral: 0 0% 93%; /* #EEEEEE */
-    --syntheta-violet: 270 100% 50%; /* Deep violet */
-    --syntheta-blue: 210 100% 50%; /* Gradient blue */
-    --syntheta-neon: 180 100% 50%; /* Neon accent */
+    --syntheta-background: 0 0% 100%;
+    --syntheta-foreground: 222.2 84% 4.9%;
+    --syntheta-card: 0 0% 100%;
+    --syntheta-card-foreground: 222.2 84% 4.9%;
+    --syntheta-popover: 0 0% 100%;
+    --syntheta-popover-foreground: 222.2 84% 4.9%;
+    --syntheta-primary: 221.2 83.2% 53.3%;
+    --syntheta-primary-foreground: 210 40% 98%;
+    --syntheta-secondary: 210 40% 96.1%;
+    --syntheta-secondary-foreground: 222.2 47.4% 11.2%;
+    --syntheta-muted: 210 40% 96.1%;
+    --syntheta-muted-foreground: 215.4 16.3% 46.9%;
+    --syntheta-accent: 210 40% 96.1%;
+    --syntheta-accent-foreground: 222.2 47.4% 11.2%;
+    --syntheta-destructive: 0 84.2% 60.2%;
+    --syntheta-destructive-foreground: 210 40% 98%;
+    --syntheta-border: 214.3 31.8% 91.4%;
+    --syntheta-input: 214.3 31.8% 91.4%;
+    --syntheta-ring: 221.2 83.2% 53.3%;
+    --syntheta-radius: 0.5rem;
 
     /* System Colors */
     --background: 0 0% 100%;
@@ -45,6 +57,25 @@
   }
 
   .dark {
+    --syntheta-background: 222.2 84% 4.9%;
+    --syntheta-foreground: 210 40% 98%;
+    --syntheta-card: 222.2 84% 4.9%;
+    --syntheta-card-foreground: 210 40% 98%;
+    --syntheta-popover: 222.2 84% 4.9%;
+    --syntheta-popover-foreground: 210 40% 98%;
+    --syntheta-primary: 217.2 91.2% 59.8%;
+    --syntheta-primary-foreground: 222.2 47.4% 11.2%;
+    --syntheta-secondary: 217.2 32.6% 17.5%;
+    --syntheta-secondary-foreground: 210 40% 98%;
+    --syntheta-muted: 217.2 32.6% 17.5%;
+    --syntheta-muted-foreground: 215 20.2% 65.1%;
+    --syntheta-accent: 217.2 32.6% 17.5%;
+    --syntheta-accent-foreground: 210 40% 98%;
+    --syntheta-destructive: 0 62.8% 30.6%;
+    --syntheta-destructive-foreground: 210 40% 98%;
+    --syntheta-border: 217.2 32.6% 17.5%;
+    --syntheta-input: 217.2 32.6% 17.5%;
+    --syntheta-ring: 224.3 76.3% 48%;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -63,7 +94,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 224.3 76.3% 48%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -109,9 +140,7 @@
 }
 
 .animate-gradient {
-  background-image: radial-gradient(circle at top right, rgba(128, 0, 128, 0.1), transparent), radial-gradient(circle at bottom left, rgba(0, 0, 255, 0.1), transparent);
-  background-size: 200% 200%;
-  animation: gradient-shift 15s ease infinite;
+  @apply bg-gradient-to-br from-syntheta-background via-syntheta-background to-syntheta-background/80;
 }
 
 /* Custom Animations */
@@ -133,13 +162,12 @@
 
 /* Custom Components */
 .glass-card {
-  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl;
+  @apply rounded-xl bg-white/60 backdrop-blur-xl border border-white/20;
 }
 
 @layer utilities {
   .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(to right, hsl(var(--syntheta-violet)), hsl(var(--syntheta-blue)));
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-syntheta-primary to-syntheta-primary/60;
   }
 
   .page-heading-gradient {
@@ -210,5 +238,14 @@
   }
   h3 {
     @apply text-4xl;
+  }
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
   }
 } 

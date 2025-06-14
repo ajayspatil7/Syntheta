@@ -4,11 +4,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -16,6 +17,14 @@ export default function Login() {
     email: '',
     password: '',
   });
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -53,13 +62,14 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const formDataToSend = new FormData();
+      const formDataToSend = new URLSearchParams();
       formDataToSend.append('username', formData.email);
       formDataToSend.append('password', formData.password);
 
       const response = await fetch('http://localhost:8000/api/v1/auth/login', {
         method: 'POST',
-        body: formDataToSend,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formDataToSend.toString(),
       });
       
       if (response.ok) {
@@ -67,8 +77,14 @@ export default function Login() {
         // Store tokens in localStorage
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
-        // Redirect to dashboard
-        router.push('/dashboard');
+        
+        // Set cookies for the tokens
+        document.cookie = `access_token=${data.access_token}; path=/;`;
+        document.cookie = `refresh_token=${data.refresh_token}; path=/;`;
+        
+        // Get the redirect URL from query params or default to dashboard
+        const redirectTo = searchParams.get('from') || '/dashboard';
+        router.push(redirectTo);
       } else {
         const data = await response.json();
         setErrors({ submit: data.detail || 'Login failed. Please try again.' });
@@ -81,21 +97,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 md:p-10 relative overflow-hidden bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Background Image with Blur */}
-      {/* Ambient Background Blobs - More Subtle */}
-      <div className="absolute top-[10%] left-[10%] w-48 h-48 bg-blue-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob"></div>
-      <div className="absolute bottom-[10%] right-[10%] w-48 h-48 bg-indigo-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob animation-delay-2000"></div>
-      <div className="absolute top-[40%] right-[15%] w-48 h-48 bg-purple-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob animation-delay-4000"></div>
-      <div className="absolute bottom-[40%] left-[15%] w-48 h-48 bg-cyan-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob animation-delay-6000"></div>
-      <div className="absolute top-[25%] right-[30%] w-48 h-48 bg-pink-200/30 rounded-full mix-blend-multiply filter blur-2xl opacity-50 animate-blob animation-delay-8000"></div>
-
-      <div className="relative z-10 w-full max-w-md p-8 md:p-10 bg-white/15 backdrop-blur-md border border-white/20 rounded-3xl shadow-glass space-y-8">
-        
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-semibold page-heading-gradient">Welcome Back</h1>
-          <p className="text-base text-gray-600">Sign in to your Syntheta account</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to your account to continue
+          </p>
         </div>
 
         {errors.submit && (
@@ -104,15 +112,14 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Login Information */}
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="email" className="text-xs uppercase font-medium text-gray-500">Email Address *</Label>
+              <Label htmlFor="email" className="text-xs uppercase font-medium text-gray-500">Email *</Label>
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="john@company.com" 
+                placeholder="you@example.com" 
                 value={formData.email} 
                 onChange={handleChange} 
                 required 
@@ -142,7 +149,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Submit */}
           <div className="space-y-4">
             <Button 
               type="submit" 
@@ -153,7 +159,7 @@ export default function Login() {
             </Button>
             
             <p className="text-center text-sm text-gray-600">
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <Link href="/signup" className="text-blue-600 font-medium hover:underline">
                 Sign Up
               </Link>

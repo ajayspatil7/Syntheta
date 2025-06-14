@@ -268,13 +268,13 @@ export default function Signup() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="employmentStatus" className="text-xs uppercase font-medium text-gray-500">Employment Status *</Label>
-                <Select value={formData.employmentStatus} onValueChange={(value) => handleSelectChange('employmentStatus', value)}>
+                <Select onValueChange={(value) => handleSelectChange('employmentStatus', value)} value={formData.employmentStatus} >
                   <SelectTrigger className={`w-full px-4 py-2 rounded-lg bg-white/60 border ${errors.employmentStatus ? 'border-red-300' : 'border-gray-200'} text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200`}>
-                    <SelectValue placeholder="Select your status" />
+                    <SelectValue placeholder="Select your employment status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white/80 backdrop-blur-md border border-gray-200 shadow-md">
+                  <SelectContent className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-lg p-1">
                     {employmentOptions.map(option => (
-                      <SelectItem key={option} value={option} className="text-gray-700 hover:bg-gray-100 focus:bg-gray-100">{option}</SelectItem>
+                      <SelectItem key={option} value={option} className="text-gray-800">{option}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -283,105 +283,80 @@ export default function Signup() {
 
               <div className="space-y-1">
                 <Label htmlFor="currentRole" className="text-xs uppercase font-medium text-gray-500">Current Role *</Label>
-                <Select value={formData.currentRole} onValueChange={(value) => handleSelectChange('currentRole', value)}>
+                <Select onValueChange={(value) => handleSelectChange('currentRole', value)} value={formData.currentRole}>
                   <SelectTrigger className={`w-full px-4 py-2 rounded-lg bg-white/60 border ${errors.currentRole ? 'border-red-300' : 'border-gray-200'} text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200`}>
-                    <SelectValue placeholder="Select your role" />
+                    <SelectValue placeholder="Select your current role" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white/80 backdrop-blur-md border border-gray-200 shadow-md">
+                  <SelectContent className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-lg p-1">
                     {roleOptions.map(option => (
-                      <SelectItem key={option} value={option} className="text-gray-700 hover:bg-gray-100 focus:bg-gray-100">{option}</SelectItem>
+                      <SelectItem key={option} value={option} className="text-gray-800">{option}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {errors.currentRole && <p className="text-xs text-red-600 mt-1">{errors.currentRole}</p>}
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs uppercase font-medium text-gray-500">Experience Level *</Label>
-              <div className="flex flex-wrap gap-3">
-                {experienceOptions.map(option => (
-                  <Button
-                    key={option}
-                    variant="outline"
-                    onClick={() => handleSelectChange('experienceLevel', option)}
-                    type="button"
-                    className={`px-4 py-2 rounded-full transition-all duration-200 ${formData.experienceLevel === option ? 'bg-blue-600 text-white border-transparent' : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'}`}
-                  >
-                    {option}
-                  </Button>
-                ))}
+              <div className="space-y-1">
+                <Label htmlFor="experienceLevel" className="text-xs uppercase font-medium text-gray-500">Experience Level *</Label>
+                <Select onValueChange={(value) => handleSelectChange('experienceLevel', value)} value={formData.experienceLevel}>
+                  <SelectTrigger className={`w-full px-4 py-2 rounded-lg bg-white/60 border ${errors.experienceLevel ? 'border-red-300' : 'border-gray-200'} text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200`}>
+                    <SelectValue placeholder="Select your experience level" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-lg p-1">
+                    {experienceOptions.map(option => (
+                      <SelectItem key={option} value={option} className="text-gray-800">{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.experienceLevel && <p className="text-xs text-red-600 mt-1">{errors.experienceLevel}</p>}
               </div>
-              {errors.experienceLevel && <p className="text-xs text-red-600 mt-1">{errors.experienceLevel}</p>}
-            </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs uppercase font-medium text-gray-500">Primary Interest(s) *</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {interestOptions.map(interest => (
-                  <div key={interest} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                    <Checkbox
-                      id={interest}
-                      checked={formData.primaryInterests.includes(interest)}
-                      onCheckedChange={(checked) => handleInterestChange(interest, checked)}
-                      className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white data-[state=checked]:border-transparent focus-visible:ring-1 focus-visible:ring-blue-300 transition-all duration-200"
-                    />
-                    <label 
-                      htmlFor={interest} 
-                      className="text-sm font-normal text-gray-700 cursor-pointer select-none"
-                    >
-                      {interest}
-                    </label>
-                  </div>
-                ))}
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs uppercase font-medium text-gray-500">Primary Interests *</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {interestOptions.map(interest => (
+                    <div key={interest} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={interest} 
+                        checked={formData.primaryInterests.includes(interest)}
+                        onCheckedChange={(checked) => handleInterestChange(interest, checked)}
+                        className="border-gray-300 text-blue-500 focus:ring-blue-500"
+                      />
+                      <Label htmlFor={interest} className="text-sm text-gray-700 cursor-pointer">{interest}</Label>
+                    </div>
+                  ))}
+                </div>
+                {errors.primaryInterests && <p className="text-xs text-red-600 mt-1">{errors.primaryInterests}</p>}
               </div>
-              {errors.primaryInterests && <p className="text-xs text-red-600 mt-1">{errors.primaryInterests}</p>}
-            </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="howDidYouHear" className="text-xs uppercase font-medium text-gray-500">How did you hear about us? (Optional)</Label>
-              <Input 
-                id="howDidYouHear" 
-                type="text" 
-                placeholder="e.g., Twitter, LinkedIn, Conference" 
-                value={formData.howDidYouHear} 
-                onChange={handleChange} 
-                className="w-full px-4 py-2 rounded-lg bg-white/60 border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200"
-              />
+              <div className="space-y-1 col-span-2">
+                <Label htmlFor="howDidYouHear" className="text-xs uppercase font-medium text-gray-500">How did you hear about Syntheta?</Label>
+                <Input 
+                  id="howDidYouHear" 
+                  type="text" 
+                  placeholder="e.g., Friend, Social Media, Article" 
+                  value={formData.howDidYouHear} 
+                  onChange={handleChange} 
+                  className="w-full px-4 py-2 rounded-lg bg-white/60 border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:ring-1 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Terms and Submit */}
-          <div className="space-y-4">
-            <div className="flex items-start space-x-2">
-              <Checkbox 
-                id="terms" 
-                required
-                className="mt-1 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white data-[state=checked]:border-transparent focus-visible:ring-1 focus-visible:ring-blue-300 transition-all duration-200"
-              />
-              <label htmlFor="terms" className="text-sm text-gray-700">
-                I agree to the{' '}
-                <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>
-                {' '}and{' '}
-                <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
-              </label>
-            </div>
+          <Button 
+            type="submit" 
+            className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors duration-200"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing up...' : 'Create Account'}
+          </Button>
 
-            <Button 
-              type="submit" 
-              disabled={isLoading}
-              className="w-full text-lg px-6 py-3 rounded-full bg-gray-800 text-white font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
-            </Button>
-            
-            <p className="text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link href="/login" className="text-blue-600 font-medium hover:underline transition-colors duration-200">
-                Sign In
-              </Link>
-            </p>
-          </div>
+          <p className="text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Log in
+            </Link>
+          </p>
         </form>
       </div>
     </div>

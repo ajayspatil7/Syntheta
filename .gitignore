@@ -6,6 +6,9 @@ node_modules
 # Testing
 coverage
 
+# Mirage
+mirage/
+
 # Next.js
 .next/
 out/

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from "next/server";
 import { ModelDetails } from '@/types/model-library';
+
 
 // Temporary sample data - in a real app, this would come from a database
 const sampleDetails: Record<string, ModelDetails> = {
@@ -216,27 +217,20 @@ for i, defect in enumerate(defects):
   },
 };
 
+// Fixed: Proper Next.js App Router API route type
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
-  try {
-    const modelId = params.id;
-    const modelDetails = sampleDetails[modelId];
+  const { id } = context.params;
+  const modelDetails = sampleDetails[id];
 
-    if (!modelDetails) {
-      return NextResponse.json(
-        { error: 'Model not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(modelDetails);
-  } catch (error) {
-    console.error('Error fetching model details:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch model details' },
-      { status: 500 }
+  if (!modelDetails) {
+    return new Response(
+      JSON.stringify({ error: "Model not found" }),
+      { status: 404 }
     );
   }
-} 
+
+  return new Response(JSON.stringify(modelDetails));
+}

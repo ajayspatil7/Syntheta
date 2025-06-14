@@ -6,6 +6,7 @@ interface DagEditorLayoutProps {
   nodePalette: React.ReactNode;
   dagCanvas: React.ReactNode;
   configPanel: React.ReactNode;
+  runHistory?: React.ReactNode;
   className?: string;
 }
 
@@ -13,6 +14,7 @@ export function DagEditorLayout({
   nodePalette,
   dagCanvas,
   configPanel,
+  runHistory,
   className,
 }: DagEditorLayoutProps) {
   return (
@@ -38,9 +40,15 @@ export function DagEditorLayout({
           minSize={40}
           className="relative"
         >
-          <div className="h-full w-full">
-            {dagCanvas}
-          </div>
+          {runHistory ? (
+            <div className="h-full w-full">
+              {runHistory}
+            </div>
+          ) : (
+            <div className="h-full w-full">
+              {dagCanvas}
+            </div>
+          )}
         </ResizablePanel>
 
         <ResizableHandle />

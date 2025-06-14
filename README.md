@@ -66,10 +66,42 @@ Syntheta is an AI-first developer tool for designing, orchestrating, and monitor
  └── docs/                 # API & usage docs
 ```
 
+## Deploying to Railway
+
+### 1. Prepare Environment Variables
+- Copy the example env files and set your secrets in Railway dashboard:
+  - `apps/backend/.env.example` → `apps/backend/.env`
+  - `apps/frontend/.env.example` → `apps/frontend/.env`
+  - `apps/engine/.env.example` → `apps/engine/.env`
+- Set all required variables in the Railway service settings for each service.
+
+### 2. Dockerfile Setup
+- Each service (`backend`, `frontend`, `engine`) now has a production-ready `Dockerfile` in its root.
+- Railway will auto-detect and build each service if you use the monorepo feature.
+
+### 3. Database Migrations
+- Backend uses Alembic for migrations. You can add a Railway deploy hook to run migrations after deploy:
+  ```sh
+  alembic upgrade head
+  ```
+  Or run this manually from the Railway console.
+
+### 4. Ports
+- Backend: 8000
+- Engine: 8001
+- Frontend: 3000
+
+### 5. Healthchecks
+- Backend Dockerfile includes a healthcheck. Add similar checks to other services if needed.
+
+### 6. Monorepo Setup
+- When connecting your GitHub repo, add each service as a separate Railway service and point to its subdirectory.
+- Set the build and start commands if not using Docker (see Dockerfiles for reference).
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
