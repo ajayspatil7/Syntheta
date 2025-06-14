@@ -47,7 +47,6 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.PROJECT_VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
     lifespan=lifespan,
@@ -159,16 +158,8 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
-    """Basic health check endpoint."""
-    return JSONResponse(
-        content={
-            "status": "healthy",
-            "version": settings.PROJECT_VERSION,
-            "environment": settings.ENVIRONMENT,
-            "timestamp": time.time(),
-        }
-    )
+def health_check():
+    return {"status": "ok"}
 
 
 @app.get("/health/detailed")
