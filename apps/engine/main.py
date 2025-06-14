@@ -671,13 +671,6 @@ async def execute_exporter_node(node: DagNode, dag: SyntheticDataDAG, data_store
         print(export_message)
         pass
 
-    elif exporter_type == 'minio':
-        print(f"Exporter Type: MinIO. Bucket: {destination.bucket}, Path: {destination.path}")
-        # TODO: Implement MinIO export logic
-        export_message = "MinIO export not yet implemented."
-        print(export_message)
-        pass
-
     elif exporter_type == 's3':
         print(f"Exporter Type: S3. Bucket: {destination.bucket}, Path: {destination.path}")
         # TODO: Implement S3 export logic

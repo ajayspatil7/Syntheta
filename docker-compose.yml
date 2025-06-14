@@ -1,87 +1,128 @@
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: syntheta-postgres
+    environment:
+      POSTGRES_USER: syntheta_user
+      POSTGRES_PASSWORD: syntheta_pass
+      POSTGRES_DB: syntheta
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U syntheta_user -d syntheta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: syntheta-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: syntheta-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile.dev
+    container_name: syntheta-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/backend:/app
+    environment:
+      - DATABASE_URL=postgresql://syntheta_user:syntheta_pass@postgres:5432/syntheta
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-your-auth0-domain}
+      - AUTH0_API_AUDIENCE=${AUTH0_API_AUDIENCE:-your-api-audience}
+      - AUTH_SECRET_KEY=${AUTH_SECRET_KEY:-your-secret-key-change-this}
+      - PYTHONPATH=/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        python app/db/init_db.py &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Engine Service (Pipeline Executor)
+  engine:
+    build:
+      context: ./apps/engine
+      dockerfile: Dockerfile.dev
+    container_name: syntheta-engine
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./apps/engine:/app
+    environment:
+      - DATABASE_URL=postgresql://syntheta_user:syntheta_pass@postgres:5432/syntheta
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+    depends_on:
+      - postgres
+      - redis
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+  # Frontend Service
   frontend:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile.dev
+    container_name: syntheta-frontend
     ports:
       - "3000:3000"
     volumes:
       - ./apps/frontend:/app
       - /app/node_modules
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_ENGINE_URL=http://localhost:8001
     depends_on:
       - backend
-
-  backend:
-    build:
-      context: ./apps/backend
-      dockerfile: Dockerfile.dev
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./apps/backend:/app
-    environment:
-      - ENVIRONMENT=development
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/syntheta
-      - REDIS_URL=redis://redis:6379/0
-    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  db:
-    image: postgres:15-alpine
-    ports:
-      - "6543:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=syntheta
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli ping | grep PONG"]
-      interval: 1s
-      timeout: 3s
-      retries: 5
-
-  temporal:
-    image: temporalio/auto-setup:1.22.3
-    ports:
-      - "7233:7233"
-      - "7234:7234"
-      - "7235:7235"
-    environment:
-      - TEMPORAL_DYNAMIC_CONFIG_DIR=disabled
-      - SKIP_SCHEMA_SETUP=false
-      - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PWD=postgres
-      - POSTGRES_SEEDS=db
-    volumes:
-      - temporal_data:/var/lib/temporal
-    depends_on:
-      db:
-        condition: service_healthy
+      - engine
 
 volumes:
   postgres_data:
   redis_data:
-  temporal_data: 
+  minio_data:

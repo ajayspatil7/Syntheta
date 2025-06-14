@@ -447,7 +447,7 @@ function NodeConfigPanel({ node, onConfigChange }: NodeConfigPanelProps) {
                     </div>
                   )}
 
-                  {['minio', 's3'].includes(config.type) && (
+                  {config.type === 's3' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label>Bucket</Label>
@@ -1860,7 +1860,7 @@ function NodeConfigPanel({ node, onConfigChange }: NodeConfigPanelProps) {
                     />
                   </div>
                 )}
-                {(config.type === 'minio' || config.type === 's3') && (
+                {(config.type === 's3') && (
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label>Bucket</Label>

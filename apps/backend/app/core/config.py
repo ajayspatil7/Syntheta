@@ -1,78 +1,39 @@
-from ast import alias
-from typing import List, Optional
+from typing import Optional
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from fastapi.middleware.cors import CORSMiddleware
-
-def get_cors_settings() -> dict:
-    return {
-        "allow_origins": ["*"],
-        "allow_credentials": True,
-        "allow_methods": ["*"],
-        "allow_headers": ["*"],
-    }
+from pydantic import validator
 
 class Settings(BaseSettings):
     # Environment
-    environment: str = Field("production", alias="ENVIRONMENT")
-    debug: bool = Field(False, alias="DEBUG")
-    log_level: str = Field("INFO", alias="LOG_LEVEL")
-
-
-
+    ENVIRONMENT: str = "development"
+    
     # Database
-    database_url: str = Field(..., alias="DATABASE_URL")
-    external_database_url: Optional[str] = Field(None, alias="EXTERNAL_DATABASE_URL")
-
+    DATABASE_URL: str = "postgresql://syntheta_user:syntheta_pass@postgres:5432/syntheta"
+    
     # Redis
-    redis_url: str = Field("redis://localhost:6379/0", alias="REDIS_URL")
-    external_redis_url: Optional[str] = Field(None, alias="EXTERNAL_REDIS_URL")
-
+    REDIS_URL: str = "redis://redis:6379/0"
+    
+    # Temporal (for future use)
+    TEMPORAL_HOST: str = "localhost"
+    TEMPORAL_PORT: int = 7233
+    
     # Authentication
-    auth_secret_key: str = Field(..., alias="AUTH_SECRET_KEY")
-    auth_algorithm: str = Field("HS256", alias="AUTH_ALGORITHM")
-    auth_access_token_expire_minutes: int = Field(30, alias="AUTH_ACCESS_TOKEN_EXPIRE_MINUTES")
-    refresh_token_expire_days: int = Field(7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
-    jwt_secret_key: str = Field(..., alias="JWT_SECRET_KEY")
-    algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
-
-    # Auth0
-    auth0_domain: str = Field("", alias="AUTH0_DOMAIN")
-    auth0_api_audience: str = Field("", alias="AUTH0_API_AUDIENCE")
-    auth0_algorithms: List[str] = Field(default_factory=lambda: ["RS256"], alias="AUTH0_ALGORITHMS")
-
-    # Storage (MinIO)
-    storage_bucket: str = Field("syntheta-storage", alias="STORAGE_BUCKET")
-    minio_endpoint: str = Field("localhost:9000", alias="MINIO_ENDPOINT")
-    minio_access_key: str = Field("minioadmin", alias="MINIO_ACCESS_KEY")
-    minio_secret_key: str = Field("minioadmin", alias="MINIO_SECRET_KEY")
-    minio_bucket: str = Field("syntheta", alias="MINIO_BUCKET")
-
-    # MLflow
-    mlflow_tracking_uri: str = Field("http://localhost:5000", alias="MLFLOW_TRACKING_URI")
-    mlflow_experiment_name: str = Field("syntheta", alias="MLFLOW_EXPERIMENT_NAME")
-
-    # Temporal
-    temporal_host: str = Field("localhost", alias="TEMPORAL_HOST")
-    temporal_port: int = Field(7233, alias="TEMPORAL_PORT")
-
-    api_v1_str: str = Field("/api/v1", alias="API_V1_STR")
-
-    # CORS
-    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000"], alias="CORS_ORIGINS")
-
-    # PgAdmin (if used)
-    pgadmin_email: Optional[str] = Field(None, alias="PGADMIN_EMAIL")
-    pgadmin_password: Optional[str] = Field(None, alias="PGADMIN_PASSWORD")
-
-    # Postgres
-    postgres_password: Optional[str] = Field("postgres", alias="POSTGRES_PASSWORD")
-
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8",
-        "populate_by_name": True,
-        "case_sensitive": True,
-    }
+    AUTH0_DOMAIN: str = ""
+    AUTH0_API_AUDIENCE: str = ""
+    AUTH0_ALGORITHMS: list[str] = ["RS256"]
+    AUTH_SECRET_KEY: str = "your-secret-key"
+    AUTH_ALGORITHM: str = "HS256"
+    AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # File Storage (local for MVP)
+    UPLOAD_DIR: str = "/app/uploads"
+    EXPORT_DIR: str = "/app/exports"
+    
+    # MLflow (for future use)
+    MLFLOW_TRACKING_URI: str = "http://localhost:5000"
+    MLFLOW_EXPERIMENT_NAME: str = "syntheta"
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 settings = Settings()
