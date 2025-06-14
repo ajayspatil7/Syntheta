@@ -24,6 +24,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy Alembic directory and its contents
 COPY ./alembic /app/alembic
 
+COPY .env /app/.env
+
+
 # Copy the rest of the application
 COPY . .
 

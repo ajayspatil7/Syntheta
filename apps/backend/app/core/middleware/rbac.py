@@ -23,8 +23,8 @@ async def check_permissions(
         # Decode JWT
         payload = jwt.decode(
             token,
-            settings.AUTH_SECRET_KEY,
-            algorithms=[settings.AUTH_ALGORITHM]
+            settings.auth_secret_key,
+            algorithms=[settings.auth_algorithm]
         )
         
         # Get user permissions from JWT

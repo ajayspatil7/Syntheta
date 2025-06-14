@@ -7,7 +7,7 @@ from app.activities.node_activities import execute_node
 async def start_temporal_worker():
     # Create client connected to server
     client = await Client.connect(
-        f"{settings.TEMPORAL_HOST}:{settings.TEMPORAL_PORT}"
+        f"{settings.temporal_host}:{settings.temporal_port}"
     )
 
     # Run the worker
@@ -22,6 +22,6 @@ async def start_temporal_worker():
 
 async def get_temporal_client():
     client = await Client.connect(
-        f"{settings.TEMPORAL_HOST}:{settings.TEMPORAL_PORT}"
+        f"{settings.temporal_host}:{settings.temporal_port}"
     )
     return client 

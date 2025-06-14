@@ -16,7 +16,7 @@ async def create_tables():
     """Create all database tables"""
     try:
         print("🔗 Connecting to database...")
-        engine = create_engine(settings.DATABASE_URL)
+        engine = create_engine(settings.database_url)
         
         # Test connection
         with engine.connect() as conn:

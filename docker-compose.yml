@@ -26,7 +26,7 @@ services:
       - ENVIRONMENT=development
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/syntheta
       - REDIS_URL=redis://redis:6379/0
-    command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     depends_on:
       db:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli ping | grep PONG"]
       interval: 1s
       timeout: 3s
       retries: 5
@@ -68,7 +68,7 @@ services:
       - "7234:7234"
       - "7235:7235"
     environment:
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+      - TEMPORAL_DYNAMIC_CONFIG_DIR=disabled
       - SKIP_SCHEMA_SETUP=false
       - DB=postgresql
       - DB_PORT=5432

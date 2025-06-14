@@ -11,7 +11,7 @@ def check_database_connection():
     """Check if we can connect to PostgreSQL and the Syntheta database"""
     
     print("🔍 Checking Database Connection...")
-    print(f"Database URL: {settings.DATABASE_URL}")
+    print(f"Database URL: {settings.database_url}")
     
     try:
         # Test basic PostgreSQL connection

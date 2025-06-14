@@ -20,14 +20,14 @@ def create_access_token(
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(
-            minutes=settings.AUTH_ACCESS_TOKEN_EXPIRE_MINUTES
+            minutes=settings.auth_access_token_expire_minutes
         )
     
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(
         to_encode, 
-        settings.AUTH_SECRET_KEY, 
-        algorithm=settings.AUTH_ALGORITHM
+        settings.auth_secret_key, 
+        algorithm=settings.auth_algorithm
     )
     return encoded_jwt
 
@@ -37,9 +37,9 @@ def create_refresh_token(
 ) -> str:
     """Create a JWT refresh token"""
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now() + timedelta(days=settings.refresh_token_expire_days)
     
     to_encode = {
         "exp": expire,
@@ -48,8 +48,8 @@ def create_refresh_token(
     }
     encoded_jwt = jwt.encode(
         to_encode,
-        settings.AUTH_SECRET_KEY,
-        algorithm=settings.AUTH_ALGORITHM
+        settings.auth_secret_key,
+        algorithm=settings.auth_algorithm
     )
     return encoded_jwt
 
@@ -57,9 +57,9 @@ def verify_token(token: str) -> Optional[str]:
     """Verify and decode JWT token"""
     try:
         payload = jwt.decode(
-            token, 
-            settings.AUTH_SECRET_KEY, 
-            algorithms=[settings.AUTH_ALGORITHM]
+            token,
+            settings.auth_secret_key,
+            algorithms=[settings.auth_algorithm]
         )
         return payload.get("sub")
     except JWTError:

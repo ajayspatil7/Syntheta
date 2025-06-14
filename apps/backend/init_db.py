@@ -101,7 +101,7 @@ def create_initial_data():
 def main():
     """Main initialization function"""
     print("🚀 Initializing Syntheta Database...")
-    print(f"Database URL: {settings.DATABASE_URL}")
+    print(f"Database URL: {settings.database_url}")
     
     # Step 1: Create tables
     if not create_tables():

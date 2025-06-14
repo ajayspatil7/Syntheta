@@ -71,7 +71,7 @@ class AuthService:
         db_refresh_token = RefreshToken(
             user_id=user.id,
             token=refresh_token,
-            expires_at=datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            expires_at=datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
         )
         db.add(db_refresh_token)
         db.commit()
@@ -109,7 +109,7 @@ class AuthService:
         new_db_token = RefreshToken(
             user_id=user_id,
             token=new_refresh_token,
-            expires_at=datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+            expires_at=datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
         )
         db.add(new_db_token)
         db.commit()

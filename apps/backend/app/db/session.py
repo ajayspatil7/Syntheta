@@ -9,10 +9,10 @@ from app.core.config import settings
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
-print(f"Connecting to database with URL: {settings.DATABASE_URL}")
+print(f"Connecting to database with URL: {settings.database_url}")
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.database_url,
     poolclass=QueuePool,
     pool_size=5,
     max_overflow=10,

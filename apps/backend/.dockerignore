@@ -1,0 +1,41 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+backend/  # Looks like an embedded venv directory in your tree
+
+# Tests and scripts
+*.test.py
+test_*.py
+reset_db.py
+init_db.py
+migrate.py
+
+# Docker / build artifacts
+*.db
+*.log
+*.pid
+*.tar
+*.gz
+*.egg-info/
+.eggs/
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Python packaging
+dist/
+build/
+
+# Git
+.git
+.gitignore
